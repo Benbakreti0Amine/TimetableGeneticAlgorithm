@@ -1,214 +1,225 @@
-# 3 bits for Time Slot | 3 bits for Day | 2 bits for Course | 3 bits for Teacher | 3 bits for Classroom | 2 bits for Student Group
+# NUM_SLOTS_PER_DAY = 8  # Number of time slots per day
+# NUM_DAYS = 5  # Number of days in the week
+# NUM_SUBJECTS = 8  # Number of subjects
+# NUM_TEACHERS = 6  # Number of teachers
+# NUM_CLASSROOMS = 4  # Number of classrooms
+# NUM_STUDENT_GROUPS = 4  # Number of student groups
+# TIMETABLE_SIZE = 40  # Total number of time slots (5 days * 8 slots per day)
+
 import random
-from simple.init import  crossover, mutate, selection
-# Define constants for encoding
-NUM_SLOTS_PER_DAY = 8  # 8 periods per day
-NUM_DAYS = 5  # 5 days a week
-NUM_SUBJECTS = 4  # 4 subjects
-TIMETABLE_SIZE = NUM_SLOTS_PER_DAY * NUM_DAYS  # Total slots in the timetable (8 * 5 = 40)
-NUM_TEACHERS = 8
-NUM_CLASSROOMS = 8
-NUM_STUDENT_GROUPS = 4
-def generate_gene():
+def generate_gene(year_id, available_teachers, available_courses, available_classrooms, available_timeslots):
     """
-    Generate a random 16-bit gene representing time slot, day, course, teacher, classroom, and student group.
-    
-    Returns:
-    - 16-bit integer for one slot
-    """
-    time_slot = random.randint(0, NUM_SLOTS_PER_DAY - 1)  # 3 bits
-    day = random.randint(0, NUM_DAYS - 1)  # 3 bits
-    course = random.randint(0, NUM_SUBJECTS - 1)  # 2 bits
-    teacher = random.randint(0, NUM_TEACHERS - 1)  # 3 bits (assumes up to 8 teachers)
-    classroom = random.randint(0, NUM_CLASSROOMS - 1)  # 3 bits (assumes up to 8 classrooms)
-    student_group = random.randint(0, NUM_STUDENT_GROUPS - 1)  # 2 bits (assumes up to 4 groups)
-    
-    return encode_schedule(time_slot, day, course, teacher, classroom, student_group)
+    Generate a random gene (course assignment) for a specific year.
 
-###############################################################
-
-def generate_population(population_size):
-    """
-    Generate a population of random timetables.
-    Each timetable is a list of genes, where each gene is a 16-bit integer.
+    Parameters:
+    - year_id: The ID of the study year this gene belongs to.
+    - available_teachers: The list of available teachers.
+    - available_courses: The list of available courses for this year.
+    - available_classrooms: The list of available classrooms.
+    - available_timeslots: The list of available timeslots.
 
     Returns:
-    - List of individuals (each a list of genes)
+    - A dictionary representing the gene.
     """
+    course = random.choice(available_courses)  # Randomly choose a course for the year
+    teacher = random.choice([t for t in available_teachers if course in t['courses']])  # Select a teacher who can teach the course
+    classroom = random.choice(available_classrooms)  # Choose a classroom
+    timeslot = random.choice(available_timeslots)  # Choose a timeslot (combining day and slot)
+
+    return {
+        'year_id': year_id,
+        'course': course,
+        'teacher': teacher['id'],
+        'classroom': classroom['id'],
+        'timeslot': timeslot
+    }
+
+def generate_population(population_size, years, teachers, courses, classrooms, timeslots, hours_per_course):
     population = []
+    
     for _ in range(population_size):
-        individual = [generate_gene() for _ in range(TIMETABLE_SIZE)]  # 40 slots, each represented by 16 bits
+        individual = []
+        for year in years:
+            year_timetable = []
+            
+            for course in courses:
+                for _ in range(hours_per_course[course]):
+                    gene = generate_gene(
+                        year_id=year['id'], 
+                        available_teachers=teachers, 
+                        available_courses=[course], 
+                        available_classrooms=classrooms, 
+                        available_timeslots=timeslots
+                    )
+                    year_timetable.append(gene)
+                    
+            individual.append(year_timetable)
         population.append(individual)
+    
     return population
 
-###############################################################
+def display_population(population):
+    for idx, individual in enumerate(population):
+        print(f"\nIndividual {idx + 1}:")
+        for year_timetable in individual:
+            for gene in year_timetable:
+                print(f"  Year {gene['year_id']} - Course: {gene['course']}, Teacher ID: {gene['teacher']}, "
+                      f"Classroom ID: {gene['classroom']}, Timeslot: {gene['timeslot']['day']} Slot {gene['timeslot']['slot']}")
 
-def encode_schedule(time_slot, day, course, teacher, classroom, student_group):
-    """
-    Encode a schedule into a 16-bit integer.
-    - time_slot: 3 bits (0 to 7)
-    - day: 3 bits (0 to 4)
-    - course: 2 bits (0 to 3)
-    - teacher: 3 bits (0 to 7)
-    - classroom: 3 bits (0 to 7)
-    - student_group: 2 bits (0 to 3)
+# Test data
+teachers = [
+    {'id': 1, 'name': 'Dr. Smith', 'courses': ['Math', 'Physics']},
+    {'id': 2, 'name': 'Ms. Johnson', 'courses': ['Chemistry']},
+    {'id': 3, 'name': 'Mr. Brown', 'courses': ['Math', 'Biology']}
+]
+
+classrooms = [
+    {'id': 101, 'name': 'Room A', 'capacity': 30},
+    {'id': 102, 'name': 'Room B', 'capacity': 25},
+    {'id': 103, 'name': 'Lab 1', 'capacity': 20}
+]
+
+courses = ['Math', 'Physics', 'Chemistry', 'Biology']
+
+years = [
+    {'id': 1, 'name': 'Year 1'},
+    {'id': 2, 'name': 'Year 2'}
+]
+
+timeslots = [
+    {'day': 'Monday', 'slot': 1},
+    {'day': 'Monday', 'slot': 2},
+    {'day': 'Tuesday', 'slot': 1},
+    {'day': 'Tuesday', 'slot': 2}
+]
+
+hours_per_course = {'Math': 2, 'Physics': 1, 'Chemistry': 1, 'Biology': 2}
+
+# Generate and display population
+population = generate_population(3, years, teachers, courses, classrooms, timeslots, hours_per_course)
+display_population(population)
+##########################################
+########################################
+##########################################
+
+
+
+# def calculate_fitness(population, hours_per_course, teacher_max_hours):
+#     """
+#     Calculate the fitness of each individual in the population.
     
-    Returns:
-    - 16-bit integer representation of the schedule
-    """
-    return (time_slot << 13) | (day << 10) | (course << 8) | (teacher << 5) | (classroom << 2) | student_group
+#     The fitness is calculated based on the number of constraint violations.
+#     Lower fitness values indicate better solutions.
 
-###############################################################
+#     Parameters:
+#     - population: List of individuals, where each individual is a list of timetables for each year.
+#     - hours_per_course: Dictionary of total teaching hours required for each course.
+#     - teacher_max_hours: Dictionary of maximum teaching hours for each teacher.
 
-def decode_schedule(schedule_code):
-    """
-    Decode a 16-bit schedule back into components.
-    - schedule_code: 16-bit encoded value
-    
-    Returns:
-    - Tuple (time_slot, day, course, teacher, classroom, student_group)
-    """
-    time_slot = (schedule_code >> 13) & 0b111
-    day = (schedule_code >> 10) & 0b111
-    course = (schedule_code >> 8) & 0b11
-    teacher = (schedule_code >> 5) & 0b111
-    classroom = (schedule_code >> 2) & 0b111
-    student_group = schedule_code & 0b11
-    return time_slot, day, course, teacher, classroom, student_group
+#     Returns:
+#     - A list of fitness scores for each individual in the population.
+#     """
+#     fitness_scores = []
 
-###############################################################
-def fitness_function(schedule):
-    """
-    Evaluate the fitness of a schedule based on several criteria.
-    Higher fitness means fewer clashes and better adherence to constraints.
-    
-    Parameters:
-    - schedule: List of 16-bit schedules
-    
-    Returns:
-    - Fitness score (higher is better)
-    """
-    fitness = 0
-    seen_slots = set()
-    teacher_slots = {}
-    classroom_slots = {}
-    student_group_slots = {}
+#     for individual in population:
+#         # Initialize penalties
+#         teacher_conflict_penalty = 0
+#         classroom_conflict_penalty = 0
+#         course_hours_penalty = 0
+#         total_hours_penalty = 0
+#         teacher_hours = {teacher['id']: 0 for teacher in teachers}
 
-    for code in schedule:
-        time_slot, day, course, teacher, classroom, student_group = decode_schedule(code)
+#         # Track occupied classrooms and teacher schedules
+#         occupied_timeslots = {}
+#         teacher_schedule = {}
         
-        # Check for clashes
-        if (time_slot, day) in seen_slots:
-            fitness -= 1  # Penalize for clashes
-        else:
-            seen_slots.add((time_slot, day))
-            fitness += 1  # Reward for valid assignments
-
-        # Additional checks
-        # Teacher scheduling
-        if (teacher, time_slot, day) in teacher_slots:
-            fitness -= 2  # Penalize for teacher conflicts
-        else:
-            teacher_slots[(teacher, time_slot, day)] = course
-            fitness += 2  # Reward for valid teacher scheduling
-
-        # Classroom scheduling
-        if (classroom, time_slot, day) in classroom_slots:
-            fitness -= 2  # Penalize for classroom conflicts
-        else:
-            classroom_slots[(classroom, time_slot, day)] = course
-            fitness += 2  # Reward for valid classroom scheduling
-
-        # Student group scheduling
-        if (student_group, course, time_slot, day) in student_group_slots:
-            fitness -= 2  # Penalize for student group conflicts
-        else:
-            student_group_slots[(student_group, course, time_slot, day)] = True
-            fitness += 2  # Reward for valid student group scheduling
-
-    return fitness
-
-###############################################################
-
-def display_timetable(timetable):
-    """
-    Display the timetable in a readable format.
-    
-    Parameters:
-    - timetable: List of 16-bit genes
-    
-    Returns:
-    - None (prints the timetable)
-    """
-    print("Timetable:")
-    for gene in timetable:
-        time_slot, day, course, teacher, classroom, student_group = decode_schedule(gene)
-        print(f"Time Slot: {time_slot}, Day: {day}, Course: {course}, Teacher: {teacher}, Classroom: {classroom}, Student Group: {student_group}")
-
-###############################################################
-def genetic_algorithm(population_size, generations, mutation_rate=0.01):
-    """
-    Main genetic algorithm loop with tracking of the best timetable.
-    
-    Parameters:
-    - population_size: Number of individuals in the population
-    - generations: Number of generations to run the algorithm for
-    - mutation_rate: Probability of mutation per gene
-    
-    Returns:
-    - The best individual (timetable) found after all generations
-    """
-    # Initialize population
-    population = generate_population(population_size)
-    
-    # Initialize variables to track the best individual
-    best_individual = None
-    best_fitness = -float('inf')
-    
-    for generation in range(generations):
-        # Evaluate fitness for the current population
-        population_fitness = [fitness_function(ind) for ind in population]
-        population = [ind for _, ind in sorted(zip(population_fitness, population), key=lambda x: x[0], reverse=True)]
-        
-        # Track the best individual
-        current_best_fitness = fitness_function(population[0])
-        if current_best_fitness > best_fitness:
-            best_fitness = current_best_fitness
-            best_individual = population[0]
-        
-        # Print the best fitness in each generation
-        print(f"Generation {generation+1} - Best fitness: {best_fitness}")
-        
-        # If optimal solution is found (you can define your own threshold)
-        if best_fitness == TIMETABLE_SIZE:  # Full score (no clashes)
-            break
-        
-        # Selection (choose parents)
-        new_population = []
-        for _ in range(population_size // 2):
-            parent1, parent2 = selection(population, fitness_function)
+#         # Check each year's timetable
+#         for year_timetable in individual:
+#             # Check for conflicts in this year's timetable
+#             year_teacher_schedule = {}
+#             year_classroom_schedule = {}
             
-            # Crossover to create offspring
-            child1 = crossover(parent1, parent2)
-            child2 = crossover(parent2, parent1)
-            
-            # Mutate offspring
-            child1 = mutate(child1, mutation_rate)
-            child2 = mutate(child2, mutation_rate)
-            
-            # Add offspring to new population
-            new_population.extend([child1, child2])
-        
-        population = new_population  # Update population
+#             for gene in year_timetable:
+#                 year_id = gene['year_id']
+#                 teacher_id = gene['teacher']
+#                 classroom_id = gene['classroom']
+#                 timeslot = (gene['timeslot']['day'], gene['timeslot']['start_time'], gene['timeslot']['end_time'])
+#                 course_name = gene['course']
+
+#  #This line checks if the current (teacher_id, timeslot) combination already exists in the year_teacher_schedule dictionary.
+#  #If it does exist, it means that the same teacher is assigned to a class during the same timeslot more than once, which is a conflict.
+                   
+#                 if (teacher_id, timeslot) in year_teacher_schedule:
+#                     teacher_conflict_penalty += 1
+#                 year_teacher_schedule[(teacher_id, timeslot)] = True #this tuple already exist
+
+#         #         # Check classroom conflicts within the same year
+#         #         if (classroom_id, timeslot) in year_classroom_schedule:
+#         #             classroom_conflict_penalty += 1
+#         #         year_classroom_schedule[(classroom_id, timeslot)] = True
+
+#         #         # Update global teacher schedule
+#         #         if (teacher_id, timeslot) in teacher_schedule:
+#         #             teacher_conflict_penalty += 1
+#         #         teacher_schedule[(teacher_id, timeslot)] = True
+
+#         #         # Update global classroom schedule
+#         #         if (classroom_id, timeslot) in occupied_timeslots:
+#         #             classroom_conflict_penalty += 1
+#         #         occupied_timeslots[(classroom_id, timeslot)] = True
+
+#         #         # Check teacher's maximum hours
+#         #         teacher_hours[teacher_id] += 0.75  # Each class is 45 minutes (0.75 hours)
+#         #         if teacher_hours[teacher_id] > teacher_max_hours[teacher_id]:
+#         #             total_hours_penalty += 1
+
+#         #         # Track teacher's hours per year
+#         #         if (teacher_id, year_id) not in year_teacher_schedule:
+#         #             year_teacher_schedule[(teacher_id, year_id)] = 0
+#         #         year_teacher_schedule[(teacher_id, year_id)] += 0.75
+                
+#         #         # Track classroom occupancy per year
+#         #         if (classroom_id, year_id) not in year_classroom_schedule:
+#         #             year_classroom_schedule[(classroom_id, year_id)] = 0
+#         #         year_classroom_schedule[(classroom_id, year_id)] += 0.75
+
+#         #         # Check if course hours are met
+#         #         if course_name not in hours_per_course:
+#         #             continue
+#         #         required_hours = hours_per_course[course_name]
+#         #         if required_hours > sum([gene['course'] == course_name for gene in year_timetable]) * 0.75:
+#         #             course_hours_penalty += 1
+
+#         # # Penalize for inconsistencies in hours
+#         # for teacher_id in teacher_hours:
+#         #     if teacher_hours[teacher_id] > teacher_max_hours[teacher_id]:
+#         #         total_hours_penalty += 1
+
+#         fitness = (teacher_conflict_penalty + classroom_conflict_penalty + 
+#                    course_hours_penalty + total_hours_penalty)
+#         fitness_scores.append(fitness)
     
-    # Return the best individual found
-    return display_timetable(best_individual)
+#     return fitness_scores
 
-# Example run:
-best_timetable = genetic_algorithm(population_size=100, generations=100)
-print("\nBest timetable:")
-display_timetable(best_timetable)
+# def display_fitness(population, fitness_scores):
+#     """
+#     Display the fitness scores of the population.
 
+#     Parameters:
+#     - population: List of individuals.
+#     - fitness_scores: List of fitness scores for each individual in the population.
+#     """
+#     for idx, individual in enumerate(population):
+#         print(f"Individual {idx + 1}:")
+#         for year_timetable in individual:
+#             print("  Year Timetable:")
+#             for gene in year_timetable:
+#                 print(f"    Course: {gene['course']}, Teacher ID: {gene['teacher']}, Classroom ID: {gene['classroom']}, Time: {gene['timeslot']['start_time']} - {gene['timeslot']['end_time']} - {gene['timeslot']['day']}")
+#         print(f"  Fitness Score: {fitness_scores[idx]}")
+#         print()
 
-###############################################################
-###############################################################
+# # # Example Usage
+# # population_size = 2
+# # population = generate_population(population_size, years, teachers, year_courses, classrooms, timeslots, hours_per_course)
+# fitness_scores = calculate_fitness(population, hours_per_course, teacher_max_hours)
+# display_fitness(population, fitness_scores)
