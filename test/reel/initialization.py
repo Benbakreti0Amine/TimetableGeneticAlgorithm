@@ -85,10 +85,11 @@ def generate_gene(year_id, available_teachers, available_courses, available_clas
 #         population.append(individual)
 
 #     return population
+
 def generate_population(population_size, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course):
     """
-    Generate a population of timetables for multiple study years.
-    
+    Generate a population of timetables for multiple study years while ensuring no time conflicts for each year.
+
     Parameters:
     - population_size: The number of timetable individuals to generate.
     - years: List of study years.
@@ -98,7 +99,7 @@ def generate_population(population_size, years, year_courses, teachers, classroo
     - timeslots: List of available timeslots.
     - teacher_max_hours: A dictionary mapping teacher IDs to their maximum allowed teaching hours.
     - hours_per_course: A dictionary with the number of hours per course.
-    
+
     Returns:
     - A list of generated individuals (timetables).
     """
@@ -106,32 +107,35 @@ def generate_population(population_size, years, year_courses, teachers, classroo
 
     for _ in range(population_size):
         individual = []
-        teacher_workload = {teacher['id']: 0 for teacher in teachers}  # Track workload for each teacher
+        teacher_workload = {teacher['id']: -1 for teacher in teachers}  # Track workload for each teacher
+        year_timeslot_usage = {year['id']: [] for year in years}  # Track timeslot usage for each year
         
         for year in years:
             year_timetable = []
-            used_timeslots = set()  # Track used timeslots for the current year
-
             courses_for_year = year_courses[year['id']]  # Get the specific courses for this year
 
             for course in courses_for_year:
                 course_duration_hours = hours_per_course[course['course_name']]  # Get hours for the course
                 slots_needed = course_duration_hours * 60 // COURSE_DURATION_MINUTES  # Convert to number of 45-minute slots
+
                 for _ in range(int(slots_needed)):
-                    # Filter available teachers who have enough remaining teaching hours
+                    # Filter available teachers who have enough remaining teaching hours across all years
                     available_teachers = [
                         t for t in teachers 
-                        if course['id'] in t['courses'] and teacher_workload[t['id']] < teacher_max_hours[t['id']]
+                        if course['id'] in t['courses'] and teacher_workload[t['id']] + (COURSE_DURATION_MINUTES / 60) <= teacher_max_hours[t['id']]
                     ]
                     
                     if not available_teachers:
                         raise Exception(f"No available teachers for course {course['course_name']} in year {year['name']}")
 
-                    # Filter out the timeslots already used by this year
-                    available_timeslots = [ts for ts in timeslots if (ts['day'], ts['slot']) not in used_timeslots]
-
+                    # Ensure no timeslot conflict for the same year
+                    available_timeslots = [
+                        ts for ts in timeslots 
+                        if (ts['day'], ts['slot']) not in year_timeslot_usage[year['id']]
+                    ]
+                    
                     if not available_timeslots:
-                        raise Exception(f"No available timeslots for year {year['name']}")
+                        raise Exception(f"No available timeslots for year {year['name']} to schedule {course['course_name']}")
 
                     gene = generate_gene(
                         year_id=year['id'], 
@@ -141,18 +145,19 @@ def generate_population(population_size, years, year_courses, teachers, classroo
                         available_timeslots=available_timeslots
                     )
 
-                    # Update teacher workload
+                    # Update teacher workload cumulatively across both years
                     teacher_workload[gene['teacher']] += COURSE_DURATION_MINUTES / 60  # Convert to hours
-
+                    
                     # Mark the timeslot as used for this year
-                    used_timeslots.add((gene['timeslot']['day'], gene['timeslot']['slot']))
-
+                    year_timeslot_usage[year['id']].append((gene['timeslot']['day'], gene['timeslot']['slot']))
+                    
                     year_timetable.append(gene)
 
             individual.append(year_timetable)
         population.append(individual)
 
     return population
+
 
 def display_population(population):
     """
@@ -162,8 +167,8 @@ def display_population(population):
         print(f"\nIndividual {idx + 1}:")
         for year_timetable in individual:
             for gene in year_timetable:
-                print(f"  Year {gene['year_id']} - Course: {gene['course']}, Teacher ID: {gene['teacher']}, "
-                      f"Classroom ID: {gene['classroom']}, Timeslot: {gene['timeslot']['day']}  {gene['timeslot']['start_time']} - {gene['timeslot']['end_time']} Slot {gene['timeslot']['slot']}")
+                print(f" Year {gene['year_id']}- Course: {gene['course']},TeacherID: {gene['teacher']}, "
+                      f"ClassID: {gene['classroom']}, Timeslot: {gene['timeslot']['day']}  {gene['timeslot']['start_time']} - {gene['timeslot']['end_time']} Slot {gene['timeslot']['slot']}")
 
 # Test data setup
 teachers = [
@@ -258,3 +263,36 @@ def fitness_function(individual):
 for idx, individual in enumerate(population):
     fitness = fitness_function(individual)
     print(f"Fitness of individual {idx + 1}: {fitness}")
+
+
+######################################
+######################################
+######################################
+
+def crossover(parent1, parent2):
+    """
+    Perform single-point crossover between two parents to generate two offspring.
+    
+    Parameters:
+    - parent1: The first parent individual (timetable).
+    - parent2: The second parent individual (timetable).
+    
+    Returns:
+    - Two offspring individuals (timetables).
+    """
+    # Ensure both parents have the same structure
+    assert len(parent1) == len(parent2)
+
+    # Randomly choose a crossover point
+    crossover_point = random.randint(1, len(parent1) - 1)
+
+    # Create two offspring by swapping timetables at the crossover point
+    offspring1 = parent1[:crossover_point] + parent2[crossover_point:]
+    offspring2 = parent2[:crossover_point] + parent1[crossover_point:]
+
+    return offspring1, offspring2
+
+
+######################################
+######################################
+######################################

@@ -103,6 +103,65 @@ display_population(population)
 ##########################################
 
 
+# def generate_population(population_size, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course):
+#     """
+#     Generate a population of timetables for multiple study years.
+    
+#     Parameters:
+#     - population_size: The number of timetable individuals to generate.
+#     - years: List of study years.
+#     - year_courses: A dictionary where keys are year IDs and values are the specific courses for that year.
+#     - teachers: List of available teachers.
+#     - classrooms: List of available classrooms.
+#     - timeslots: List of available timeslots.
+#     - teacher_max_hours: A dictionary mapping teacher IDs to their maximum allowed teaching hours.
+#     - hours_per_course: A dictionary with the number of hours per course.
+    
+#     Returns:
+#     - A list of generated individuals (timetables).
+#     """
+#     population = []
+
+#     for _ in range(population_size):
+#         individual = []
+#         teacher_workload = {teacher['id']: 0 for teacher in teachers}  # Track workload for each teacher
+        
+#         for year in years:
+#             year_timetable = []
+#             courses_for_year = year_courses[year['id']]  # Get the specific courses for this year
+
+#             for course in courses_for_year:
+#                 course_duration_hours = hours_per_course[course['course_name']]  # Get hours for the course
+#                 slots_needed = course_duration_hours * 60 // COURSE_DURATION_MINUTES  # Convert to number of 45-minute slots
+#                 for _ in range(int(slots_needed)):
+#                     # Filter available teachers who have enough remaining teaching hours
+#                     available_teachers = [
+#                         t for t in teachers 
+#                         if course['id'] in t['courses'] and teacher_workload[t['id']] < teacher_max_hours[t['id']]
+#                     ]
+#                     # if not available_teachers:
+#                     #     available_teachers = [ t for t in teachers if course['id'] in t['courses'] ]
+                    
+#                     if not available_teachers:
+#                         raise Exception(f"No available teachers for course {course['course_name']} in year {year['name']}")
+
+#                     gene = generate_gene(
+#                         year_id=year['id'], 
+#                         available_teachers=available_teachers, 
+#                         available_courses=[course], 
+#                         available_classrooms=classrooms, 
+#                         available_timeslots=timeslots
+#                     )
+
+#                     # Update teacher workload
+#                     teacher_workload[gene['teacher']] += COURSE_DURATION_MINUTES / 60  # Convert to hours
+#                     year_timetable.append(gene)
+
+#             individual.append(year_timetable)
+#         population.append(individual)
+
+#     return population
+
 
 # def calculate_fitness(population, hours_per_course, teacher_max_hours):
 #     """
