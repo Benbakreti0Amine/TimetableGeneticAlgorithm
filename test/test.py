@@ -174,10 +174,10 @@ def mutate(individual, mutation_rate, teachers, classrooms, timeslots):
                     new_timeslot = random.choice(timeslots)
                     year_timetable[i]['timeslot'] = new_timeslot
 
-            # Swap mutation
-            if random.random() < mutation_rate / 2:
-                swap_index = random.randint(0, len(year_timetable) - 1)
-                year_timetable[i], year_timetable[swap_index] = year_timetable[swap_index], year_timetable[i]
+            # # Swap mutation
+            # if random.random() < mutation_rate / 2:
+            #     swap_index = random.randint(0, len(year_timetable) - 1)
+            #     year_timetable[i], year_timetable[swap_index] = year_timetable[swap_index], year_timetable[i]
  
     return individual
 
@@ -258,16 +258,16 @@ def repair(individual, teachers, classrooms, timeslots, teacher_max_hours):
 
 
 # Genetic Algorithm Parameters
-POPULATION_SIZE = 10
+POPULATION_SIZE = 30
 MUTATION_RATE = 0.1
-NUM_GENERATIONS = 100000
+NUM_GENERATIONS = 1000000
 TOURNAMENT_SIZE = 3
 
 # Example Usage (replace with actual data)
 
 
 teachers = [
-    {'id': 1, 'name': 'Dr. Smith', 'courses': [1, 2], 'state': 'working'},  # Math, Physics
+    {'id': 1, 'name': 'Dr. Smith', 'courses': [ 1, 2], 'state': 'working'},  # Math, Physics
     {'id': 2, 'name': 'Ms. Johnson', 'courses': [3], 'state': 'working'},  # Chemistry
     {'id': 3, 'name': 'Mr. Brown', 'courses': [1, 4], 'state': 'working'},  # Math, Biology
     {'id': 4, 'name': 'Dr. White', 'courses': [5, 6], 'state': 'working'},  # English, History
@@ -323,7 +323,7 @@ timeslots = [
     {'day': 'Tuesday', 'slot': 20, 'start_time': '11:15', 'end_time': '12:00'},
     {'day': 'Tuesday', 'slot': 21, 'start_time': '14:00', 'end_time': '14:45'},
     {'day': 'Tuesday', 'slot': 22, 'start_time': '14:45', 'end_time': '15:30'},
-    
+
     # Wednesday (slots 23-29)
     {'day': 'Wednesday', 'slot': 23, 'start_time': '08:00', 'end_time': '08:45'},
     {'day': 'Wednesday', 'slot': 24, 'start_time': '08:45', 'end_time': '09:30'},
@@ -332,15 +332,24 @@ timeslots = [
     {'day': 'Wednesday', 'slot': 27, 'start_time': '11:15', 'end_time': '12:00'},
     {'day': 'Wednesday', 'slot': 28, 'start_time': '14:00', 'end_time': '14:45'},
     {'day': 'Wednesday', 'slot': 29, 'start_time': '14:45', 'end_time': '15:30'},
-    ]
+
+    # Thursday (slots 30-36)
+    {'day': 'Thursday', 'slot': 30, 'start_time': '08:00', 'end_time': '08:45'},
+    {'day': 'Thursday', 'slot': 31, 'start_time': '08:45', 'end_time': '09:30'},
+    {'day': 'Thursday', 'slot': 32, 'start_time': '09:30', 'end_time': '10:15'},
+    {'day': 'Thursday', 'slot': 33, 'start_time': '10:30', 'end_time': '11:15'},
+    {'day': 'Thursday', 'slot': 34, 'start_time': '11:15', 'end_time': '12:00'},
+    {'day': 'Thursday', 'slot': 35, 'start_time': '14:00', 'end_time': '14:45'},
+    {'day': 'Thursday', 'slot': 36, 'start_time': '14:45', 'end_time': '15:30'},
+]
 
 teacher_max_hours = {
-    1: 35,  # Dr. Smith
-    2: 40,  # Ms. Johnson
-    3: 20,  # Mr. Brown
-    4: 22,  # Dr. White
-    5: 25,  # Ms. Davis
-    6: 25   # Dr. Green
+    1: 26,  # Dr. Smith
+    2: 26,  # Ms. Johnson
+    3: 26,  # Mr. Brown
+    4: 26,  # Dr. White
+    5: 26,  # Ms. Davis
+    6: 26   # Dr. Green
 }
 hours_per_course = {
     'Math': 4,  # A more intensive subject
@@ -364,10 +373,11 @@ import random
 # Define thresholds
 
 # Define thresholds
-RESET_THRESHOLD = -300
-STOP_THRESHOLD = -40
+RESET_THRESHOLD = -400
+STOP_THRESHOLD = -10
+
 # Initialize Population
-population = generate_population(20, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course)
+population = generate_population(30, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course)
 
 # Run Genetic Algorithm
 for generation in range(NUM_GENERATIONS):
@@ -388,13 +398,17 @@ for generation in range(NUM_GENERATIONS):
         display_population([population[best_index]])
         break
     
-    if min(fitness_values) <= RESET_THRESHOLD:
-        print("Resetting population due to fitness threshold.")
+    # Check if all fitness values are the same and below the reset threshold
+    if len(set(fitness_values)) == 1 or min(fitness_values) <= RESET_THRESHOLD:
+        print("Resetting population due to no improvement.")
         # Reinitialize the population
-        population = generate_population(20, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course)
-        # Proceed to the next generation
-        continue  # This will skip the rest of the loop and start the next generation with the new population
+        population = generate_population(30, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course)
+        if len(set(fitness_values)) == 1: print("All individuals have the same fitness value. Stopping early.")
+        if min(fitness_values) <= RESET_THRESHOLD: print("All individuals have a fitness value less than or equal to the reset threshold. ")
+        continue  # Skip the rest of the loop and start the next generation with the new population
 
+    print(2)
+    
     # Generate New Population
     new_population = []
     
@@ -407,14 +421,65 @@ for generation in range(NUM_GENERATIONS):
     # Update population with new generation
     population = new_population
 
-    # # Evaluate fitness of new population
-    # fitness_values = [fitness_function(individual, teacher_max_hours) for individual in population]
-
     # Print Best Solution of the Generation
     best_index = fitness_values.index(max(fitness_values))
     print(f"Best Fitness of Generation {generation}: {fitness_values[best_index]}")
     print(f"Best Solution of Generation {generation}:")
     # display_population([population[best_index]])
+
+
+# # Define thresholds
+# RESET_THRESHOLD = -500
+# STOP_THRESHOLD = -50
+# # Initialize Population
+# population = generate_population(10, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course)
+
+# # Run Genetic Algorithm
+# for generation in range(NUM_GENERATIONS):
+#     # Evaluate Fitness
+#     fitness_values = [fitness_function(individual, teacher_max_hours) for individual in population]
+    
+#     # Print Fitness for Each Individual
+#     print(f"Generation {generation}:")
+#     for i, fitness in enumerate(fitness_values):
+#         print(f"  Individual {i + 1}: Fitness = {fitness}")
+    
+#     # Check if we need to stop or reset
+#     if max(fitness_values) >= STOP_THRESHOLD:
+#         print("Stopping early due to fitness threshold.")
+#         best_index = fitness_values.index(max(fitness_values))
+#         print(f"Best Fitness of Generation {generation}: {fitness_values[best_index]}")
+#         print(f"Best Solution of Generation {generation}:")
+#         display_population([population[best_index]])
+#         break
+    
+#     if min(fitness_values) <= RESET_THRESHOLD:
+#         print("Resetting population due to fitness threshold.")
+#         # Reinitialize the population
+#         population = generate_population(10, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course)
+#         print(1)
+#         continue  # This will skip the rest of the loop and start the next generation with the new population
+#     print(2)
+#     # Generate New Population
+#     new_population = []
+    
+#     for _ in range(POPULATION_SIZE // 2):  
+#         parent1, parent2 = tournament_selection(population, fitness_values, k=TOURNAMENT_SIZE)
+#         child1, child2 = crossover(parent1, parent2)
+#         new_population.append(repair(mutate(child1, MUTATION_RATE, teachers, classrooms, timeslots), teachers, classrooms, timeslots, teacher_max_hours))
+#         new_population.append(repair(mutate(child2, MUTATION_RATE, teachers, classrooms, timeslots), teachers, classrooms, timeslots, teacher_max_hours))
+    
+#     # Update population with new generation
+#     population = new_population
+
+#     # # Evaluate fitness of new population
+#     # fitness_values = [fitness_function(individual, teacher_max_hours) for individual in population]
+
+#     # Print Best Solution of the Generation
+#     best_index = fitness_values.index(max(fitness_values))
+#     print(f"Best Fitness of Generation {generation}: {fitness_values[best_index]}")
+#     print(f"Best Solution of Generation {generation}:")
+#     # display_population([population[best_index]])
 
 
 
