@@ -3,158 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Course Timetable</title>
+    <title>Timetable</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
         table {
             width: 100%;
             border-collapse: collapse;
         }
         th, td {
-            border: 1px solid black;
-            padding: 10px;
+            border: 1px solid #ddd;
+            padding: 8px;
             text-align: center;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #f4f4f4;
         }
-        .time-slot {
-            background-color: #dff0d8;
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
         }
-        .math {
-            background-color: #f9e79f;
-        }
-        .physics {
-            background-color: #aed6f1;
-        }
-        .english {
-            background-color: #d7bde2;
-        }
-        .chemistry {
-            background-color: #f5b7b1;
-        }
-        .biology {
-            background-color: #f7c6c7;
-        }
-        .history {
-            background-color: #a3e4d7;
-        }
-        .computer-science {
-            background-color: #fad7a0;
-        }
-        .advanced-chemistry {
-            background-color: #fcf3cf;
+        .course-info {
+            text-align: left;
         }
     </style>
 </head>
 <body>
-
-<h2>Class Timetable</h2>
-
-<table>
-    <thead>
-        <tr>
-            <th>Time</th>
-            <th>Sunday</th>
-            <th>Monday</th>
-            <th>Tuesday</th>
-            <th>Wednesday</th>
-            <th>Thursday</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td class="time-slot">08:00 - 08:45</td>
-            <td class="english">English, TeachID: 4, ClassID: 103</td>
-            <td class="biology">Biology, TeachID: 3, ClassID: 103</td>
-            <td class="physics">Physics, TeachID: 1, ClassID: 105</td>
-            <td class="biology">Biology, TeachID: 6, ClassID: 102</td>
-            <td class="computer-science">CS, TeachID: 5, ClassID: 102</td>
-        </tr>
-        <tr>
-            <td class="time-slot">08:45 - 09:30</td>
-            <td></td>
-            <td class="physics">Physics, TeachID: 1, ClassID: 105</td>
-            <td class="math">Math, TeachID: 1, ClassID: 105</td>
-            <td class="history">History, TeachID: 4, ClassID: 103</td>
-            <td class="biology">Biology, TeachID: 6, ClassID: 104</td>
-        </tr>
-        <tr>
-            <td class="time-slot">09:30 - 10:15</td>
-            <td class="physics">Physics, TeachID: 1, ClassID: 105</td>
-            <td class="advanced-chemistry">Adv. Chemistry, TeachID: 6, ClassID: 102</td>
-            <td class="math">Math, TeachID: 3, ClassID: 105</td>
-            <td class="advanced-chemistry">Adv. Chemistry, TeachID: 6, ClassID: 102</td>
-            <td class="computer-science">CS, TeachID: 5, ClassID: 105</td>
-        </tr>
-        <tr>
-            <td class="time-slot">10:30 - 11:15</td>
-            <td class="physics">Physics, TeachID: 1, ClassID: 104</td>
-            <td class="advanced-chemistry">Adv. Chemistry, TeachID: 6, ClassID: 101</td>
-            <td class="history">History, TeachID: 4, ClassID: 101</td>
-            <td class="math">Math, TeachID: 3, ClassID: 104</td>
-            <td class="math">Math, TeachID: 3, ClassID: 102</td>
-        </tr>
-        <tr>
-            <td class="time-slot">11:15 - 12:00</td>
-            <td class="math">Math, TeachID: 1, ClassID: 102</td>
-            <td class="computer-science">CS, TeachID: 5, ClassID: 102</td>
-            <td class="math">Math, TeachID: 1, ClassID: 103</td>
-            <td class="computer-science">CS, TeachID: 5, ClassID: 104</td>
-            <td class="advanced-chemistry">Adv. Chemistry, TeachID: 6, ClassID: 102</td>
-        </tr>
-        <tr>
-            <td class="time-slot">12:00 - 12:45</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-        </tr>
-        <tr>
-            <td class="time-slot">12:45 - 13:30</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-        </tr>
-        <tr>
-            <td class="time-slot">13:30 - 14:00</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-        </tr>
-        <tr>
-            <td class="time-slot">14:00 - 14:45</td>
-            <td class="math">Math, TeachID: 3, ClassID: 105</td>
-            <td class="advanced-chemistry">Adv. Chemistry, TeachID: 6, ClassID: 103</td>
-            <td class="history">History, TeachID: 4, ClassID: 102</td>
-            <td class="physics">Physics, TeachID: 4, ClassID: 102</td>
-            <td class="history">History, TeachID: 4, ClassID: 101</td>
-        </tr>
-        <tr>
-            <td class="time-slot">14:45 - 15:30</td>
-            <td class="math">Math, TeachID: 1, ClassID: 104</td>
-            <td class="computer-science">CS, TeachID: 5, ClassID: 104</td>
-            <td class="advanced-chemistry">Adv. Chemistry, TeachID: 6, ClassID: 104</td>
-            <td class="computer-science">CS, TeachID: 5, ClassID: 104</td>
-            <td class="computer-science">CS, TeachID: 5, ClassID: 105</td>
-        </tr>
-        <tr>
-            <td class="time-slot">15:30 - 16:15</td>
-            <td class="math">Math, TeachID: 3, ClassID: 104</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-        </tr>
-    </tbody>
-</table>
-
+    <h1>Timetable</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Sunday</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>08:00 - 08:45</td>
+                <td></td>
+                <td>رياضيات (TeachID: 9191, ClassID: 104)</td>
+                <td>التربية الموسيقية (TeachID: 9181, ClassID: 104)</td>
+                <td>الرياضيات (TeachID: 9161, ClassID: 102)</td>
+                <td>الرياضيات (TeachID: 9191, ClassID: 106)</td>
+            </tr>
+            <tr>
+                <td>08:45 - 09:30</td>
+                <td></td>
+                <td></td>
+                <td>التربية الموسيقية (TeachID: 9191, ClassID: 109)</td>
+                <td>اللغة العربية (TeachID: 9191, ClassID: 104)</td>
+                <td>الرياضيات (TeachID: 9191, ClassID: 106)</td>
+            </tr>
+            <tr>
+                <td>09:30 - 10:15</td>
+                <td></td>
+                <td>التربية الموسيقية (TeachID: 9171, ClassID: 101)</td>
+                <td></td>
+                <td>اللغة العربية (TeachID: 9171, ClassID: 103)</td>
+                <td>التربية العلمية و التكنولوجية (TeachID: 9201, ClassID: 104)</td>
+            </tr>
+            <tr>
+                <td>10:30 - 11:15</td>
+                <td></td>
+                <td>التربية العلمية و التكنولوجية (TeachID: 9181, ClassID: 107)</td>
+                <td></td>
+                <td>التاريخ و الجغرافيا (TeachID: 9191, ClassID: 102)</td>
+                <td>التاريخ و الجغرافيا (TeachID: 9191, ClassID: 103)</td>
+            </tr>
+            <tr>
+                <td>11:15 - 12:00</td>
+                <td></td>
+                <td>التربية العلمية و التكنولوجية (TeachID: 9181, ClassID: 107)</td>
+                <td>التربية الموسيقية (TeachID: 9201, ClassID: 108)</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>14:00 - 14:45</td>
+                <td>التاريخ و الجغرافيا (TeachID: 9201, ClassID: 102)</td>
+                <td>التربية الإسلامية (TeachID: 9181, ClassID: 105)</td>
+                <td></td>
+                <td></td>
+                <td>التربية الإسلامية (TeachID: 9181, ClassID: 101)</td>
+            </tr>
+            <tr>
+                <td>14:45 - 15:30</td>
+                <td>التاريخ و الجغرافيا (TeachID: 9171, ClassID: 106)</td>
+                <td></td>
+                <td></td>
+                <td>التربية العلمية و التكنولوجية (TeachID: 9181, ClassID: 107)</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>15:30 - 16:15</td>
+                <td>رياضيات (TeachID: 9161, ClassID: 101)</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
 </body>
 </html>
