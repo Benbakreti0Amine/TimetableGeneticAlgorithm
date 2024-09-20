@@ -85,58 +85,144 @@ def display_population(population):
                 print(f"  {gene['year_id']}- Course: {gene['course']}, TeachID: {gene['teacher']}, "
                       f"ClassID: {gene['classroom']},{gene['timeslot']['day']}  {gene['timeslot']['start_time']} - {gene['timeslot']['end_time']} Slot {gene['timeslot']['slot']}")
 
+# def fitness_function(individual, teacher_max_hours):
+#     """
+#     Evaluate the fitness of an individual.
+#     """
+#     fitness = 0
+#     gap_penalty = 5
+#     teacher_timeslots = {}
+#     classroom_timeslots = {}
+#     teacher_workload = {teacher['id']: 0 for teacher in teachers}
+#     year_timeslot_usage = {}
+
+#     for year_timetable in individual:
+#         day_slots = {}
+#         for gene in year_timetable:
+#             teacher_id = gene['teacher']
+#             classroom_id = gene['classroom']
+#             timeslot = (gene['timeslot']['day'], gene['timeslot']['slot'])
+            
+#             if teacher_id not in teacher_timeslots:
+#                 teacher_timeslots[teacher_id] = []
+
+#             if timeslot in teacher_timeslots[teacher_id]:
+#                 # print("Overlap detected between teacher and timeslot")
+#                 fitness -= 10
+#                 teacher_workload[teacher_id] += COURSE_DURATION_MINUTES / 60
+#             else:
+#                 teacher_timeslots[teacher_id].append(timeslot)
+#                 teacher_workload[teacher_id] += COURSE_DURATION_MINUTES / 60
+
+#             if classroom_id not in classroom_timeslots:
+#                 classroom_timeslots[classroom_id] = []
+
+#             if timeslot in classroom_timeslots[classroom_id]:
+#                 # print(f"kayn conflict for classroom {classroom_id} at timeslot {timeslot}")
+#                 fitness -= 10
+#             else:
+#                 classroom_timeslots[classroom_id].append(timeslot)
+            
+#             year_id = gene['year_id']
+#             if year_id not in year_timeslot_usage:             
+#                 year_timeslot_usage[year_id] = []
+
+#             if timeslot in year_timeslot_usage[year_id]:
+#                 # print("Overlap detected between year and timeslot")
+#                 fitness -= 10
+#             else:
+#                 year_timeslot_usage[year_id].append(timeslot)
+#         for slots in day_slots.items():
+#             print(1)
+#             slots.sort()  # Sort timeslots to ensure they are consecutive
+#             for i in range(len(slots) - 1):
+#                 print(2)
+#                 current_slot = slots[i]
+#                 next_slot = slots[i + 1]
+
+#                 if next_slot > current_slot + 1:  
+#                     print(f"Gap detected between slots")
+#                     gap_size = next_slot - (current_slot + 1)
+#                     fitness -= gap_penalty * gap_size 
+#     for teacher_id, workload in teacher_workload.items():
+#         if workload > teacher_max_hours[teacher_id]:
+#             print("Teacher workload exceeds max hours")
+#             fitness -= 11  
+#     return fitness
 def fitness_function(individual, teacher_max_hours):
     """
     Evaluate the fitness of an individual.
     """
     fitness = 0
+    gap_penalty = 5
     teacher_timeslots = {}
     classroom_timeslots = {}
     teacher_workload = {teacher['id']: 0 for teacher in teachers}
     year_timeslot_usage = {}
 
     for year_timetable in individual:
+        day_slots = {}  # Reset day_slots for each year timetable
         for gene in year_timetable:
             teacher_id = gene['teacher']
             classroom_id = gene['classroom']
-            timeslot = (gene['timeslot']['day'], gene['timeslot']['slot'])
-            
+            day = gene['timeslot']['day']
+            slot = gene['timeslot']['slot']
+            timeslot = (day, slot)
+
+            # Track teacher timeslots
             if teacher_id not in teacher_timeslots:
                 teacher_timeslots[teacher_id] = []
 
             if timeslot in teacher_timeslots[teacher_id]:
-                # print("Overlap detected between teacher and timeslot")
-                fitness -= 10
-                teacher_workload[teacher_id] += COURSE_DURATION_MINUTES / 60
+                fitness -= 10  # Teacher overlap penalty
             else:
                 teacher_timeslots[teacher_id].append(timeslot)
                 teacher_workload[teacher_id] += COURSE_DURATION_MINUTES / 60
 
+            # Track classroom timeslots
             if classroom_id not in classroom_timeslots:
                 classroom_timeslots[classroom_id] = []
 
             if timeslot in classroom_timeslots[classroom_id]:
-                # print(f"kayn conflict for classroom {classroom_id} at timeslot {timeslot}")
-                fitness -= 10
+                fitness -= 10  # Classroom overlap penalty
             else:
                 classroom_timeslots[classroom_id].append(timeslot)
-            
+
+            # Track year timeslot usage
             year_id = gene['year_id']
-            if year_id not in year_timeslot_usage:             
+            if year_id not in year_timeslot_usage:
                 year_timeslot_usage[year_id] = []
 
             if timeslot in year_timeslot_usage[year_id]:
-                # print("Overlap detected between year and timeslot")
-                fitness -= 10
+                fitness -= 10  # Year overlap penalty
             else:
                 year_timeslot_usage[year_id].append(timeslot)
 
-    for teacher_id, workload in teacher_workload.items():
-        if workload > teacher_max_hours[teacher_id]:
-            # print("Teacher workload exceeds max hours")
-            fitness -= 11  
-    return fitness
+            # Track the slots per day for gap detection
+            if day not in day_slots:
+                day_slots[day] = []
+            day_slots[day].append(slot)
 
+        for day, slots in day_slots.items():
+            slots.sort()  # Sort slots to ensure they are consecutive
+            for i in range(len(slots) - 1):
+                current_slot = slots[i]
+                next_slot = slots[i + 1]
+
+                if next_slot > current_slot + 1:  # Gap detected
+                    gap_size = next_slot - (current_slot + 1)
+                    fitness -= gap_penalty * gap_size
+                    #* gap_size
+
+    # Check if teacher workload exceeds max allowed hours
+    for teacher_id, workload in teacher_workload.items():
+        if workload > teacher_max_hours.get(teacher_id, float('inf')):
+            fitness -= 11  # Workload penalty
+
+    return fitness
+                    # Determine if this gap should be penalized
+                    # Assuming morning session ends at a specific slot (e.g., 11 for 1-11 slots)
+                    # and evening starts at a specific slot (e.g., 3 for 12-15 slots)
 def crossover(parent1, parent2):
     """
     Perform random crossover between two parents to create two new individuals.
@@ -155,35 +241,35 @@ def crossover(parent1, parent2):
 
     return child1, child2
 
+
 def mutate(individual, mutation_rate, teachers, classrooms, timeslots):
     """
-    Apply mutation to an individual by randomly changing the teacher, classroom, and timeslot of a gene.
+    Apply mutation to an individual by randomly changing the teacher, classroom, and timeslot of one gene per year.
+    Mutation occurs randomly once per year if the mutation rate condition is met.
     """
     for year_timetable in individual:
-        for i in range(len(year_timetable)):
-            if random.random() < mutation_rate:
-                mutation_choice = random.choice(['teacher', 'classroom', 'timeslot'])
+        # Check if mutation should occur for this year (one mutation per year)
+        if random.random() < mutation_rate:
+            # Select a random index (gene) in the year timetable to mutate
+            mutation_index = random.randint(0, len(year_timetable) - 1)
+            mutation_choice = random.choice(['teacher', 'classroom', 'timeslot'])
 
-                if mutation_choice == 'teacher':
-                    current_course = year_timetable[i]['course']
-                    available_teachers = [t for t in teachers if current_course in t['courses']]
-                    if available_teachers:
-                        new_teacher = random.choice(available_teachers)
-                        year_timetable[i]['teacher'] = new_teacher['id']
+            # Apply the mutation based on the randomly chosen mutation type
+            if mutation_choice == 'teacher':
+                current_course = year_timetable[mutation_index]['course']
+                available_teachers = [t for t in teachers if current_course in t['courses']]
+                if available_teachers:
+                    new_teacher = random.choice(available_teachers)
+                    year_timetable[mutation_index]['teacher'] = new_teacher['id']
 
-                elif mutation_choice == 'classroom':
-                    new_classroom = random.choice(classrooms)
-                    year_timetable[i]['classroom'] = new_classroom['id']
+            elif mutation_choice == 'classroom':
+                new_classroom = random.choice(classrooms)
+                year_timetable[mutation_index]['classroom'] = new_classroom['id']
 
-                elif mutation_choice == 'timeslot':
-                    new_timeslot = random.choice(timeslots)
-                    year_timetable[i]['timeslot'] = new_timeslot
+            elif mutation_choice == 'timeslot':
+                new_timeslot = random.choice(timeslots)
+                year_timetable[mutation_index]['timeslot'] = new_timeslot
 
-            # # Swap mutation
-            # if random.random() < mutation_rate / 2:
-            #     swap_index = random.randint(0, len(year_timetable) - 1)
-            #     year_timetable[i], year_timetable[swap_index] = year_timetable[swap_index], year_timetable[i]
- 
     return individual
 
 def tournament_selection(population, fitness_values, k=3):#tkhayar best 1 mn 3 random, ttrepeata 
@@ -201,9 +287,70 @@ def tournament_selection(population, fitness_values, k=3):#tkhayar best 1 mn 3 r
     
 
     return parent1, parent2
+# def repair(individual, teachers, classrooms, timeslots, teacher_max_hours):
+#     """
+#     Repairs an individual (chromosome) by resolving hard constraint violations.
+    
+#     Parameters:
+#     - individual: The individual (timetable) to be repaired.
+#     - teachers: List of teachers.
+#     - classrooms: List of classrooms.
+#     - timeslots: List of available timeslots.
+#     - teacher_max_hours: Max teaching hours per teacher.
+
+#     Returns:
+#     - Repaired individual.
+#     """
+#     teacher_timeslots = {}  # Dictionary to track which timeslots a teacher has been assigned
+#     classroom_timeslots = {}  # Track which timeslots a classroom has been occupied
+#     teacher_workload = {teacher['id']: 0 for teacher in teachers}  # Initialize workload dictionary
+
+#     # Repair hard constraint violations
+#     for year_timetable in individual:
+#         for gene in year_timetable:
+#             teacher_id = gene['teacher']
+#             classroom_id = gene['classroom']
+#             timeslot = (gene['timeslot']['day'], gene['timeslot']['slot'])  # Combine day and slot
+
+#             # ---- Repair Teacher Conflicts ----
+#             if teacher_id not in teacher_timeslots:
+#                 teacher_timeslots[teacher_id] = []
+#             if timeslot in teacher_timeslots[teacher_id] or teacher_workload[teacher_id] >= teacher_max_hours[teacher_id]:
+#                 # Teacher conflict or exceeding max hours, so repair the gene
+#                 # Fallback: Try to find a teacher who can teach the course or select randomly
+#                 available_teachers = [t for t in teachers if gene['course'] in t['courses']]
+#                 if available_teachers:
+#                     new_teacher = random.choice(available_teachers)
+#                 else:
+#                     new_teacher = random.choice(teachers)
+#                 gene['teacher'] = new_teacher['id']
+#                 teacher_workload[new_teacher['id']] += COURSE_DURATION_MINUTES / 60  # Update workload
+#                 # Note: Recalculate workload if necessary
+#             else:
+#                 teacher_workload[teacher_id] += COURSE_DURATION_MINUTES / 60
+
+#             teacher_timeslots[teacher_id].append(timeslot)
+
+#             # ---- Repair Classroom Conflicts ----
+#             if classroom_id not in classroom_timeslots:
+#                 classroom_timeslots[classroom_id] = []
+#             if timeslot in classroom_timeslots[classroom_id]:
+#                 # Classroom conflict, so repair the gene
+#                 # Fallback: Try to find a different classroom or select randomly
+#                 if classrooms:
+#                     new_classroom = random.choice(classrooms)
+#                 else:
+#                     new_classroom = classroom_id  # No change if no alternative available
+#                 gene['classroom'] = new_classroom['id']
+
+#             classroom_timeslots[classroom_id].append(timeslot)
+
+#     return individual
+
 def repair(individual, teachers, classrooms, timeslots, teacher_max_hours):
     """
-    Repairs an individual (chromosome) by resolving hard constraint violations.
+    Repairs an individual (chromosome) by resolving hard constraint violations 
+    (e.g., teacher conflicts, classroom conflicts, workload limits), and minimizing gaps between slots.
     
     Parameters:
     - individual: The individual (timetable) to be repaired.
@@ -221,17 +368,20 @@ def repair(individual, teachers, classrooms, timeslots, teacher_max_hours):
 
     # Repair hard constraint violations
     for year_timetable in individual:
+        day_slots = {}  # Track timeslots per day to detect gaps
+
         for gene in year_timetable:
             teacher_id = gene['teacher']
             classroom_id = gene['classroom']
             timeslot = (gene['timeslot']['day'], gene['timeslot']['slot'])  # Combine day and slot
+            day = gene['timeslot']['day']
+            slot = gene['timeslot']['slot']
 
             # ---- Repair Teacher Conflicts ----
             if teacher_id not in teacher_timeslots:
                 teacher_timeslots[teacher_id] = []
             if timeslot in teacher_timeslots[teacher_id] or teacher_workload[teacher_id] >= teacher_max_hours[teacher_id]:
                 # Teacher conflict or exceeding max hours, so repair the gene
-                # Fallback: Try to find a teacher who can teach the course or select randomly
                 available_teachers = [t for t in teachers if gene['course'] in t['courses']]
                 if available_teachers:
                     new_teacher = random.choice(available_teachers)
@@ -239,7 +389,6 @@ def repair(individual, teachers, classrooms, timeslots, teacher_max_hours):
                     new_teacher = random.choice(teachers)
                 gene['teacher'] = new_teacher['id']
                 teacher_workload[new_teacher['id']] += COURSE_DURATION_MINUTES / 60  # Update workload
-                # Note: Recalculate workload if necessary
             else:
                 teacher_workload[teacher_id] += COURSE_DURATION_MINUTES / 60
 
@@ -250,17 +399,39 @@ def repair(individual, teachers, classrooms, timeslots, teacher_max_hours):
                 classroom_timeslots[classroom_id] = []
             if timeslot in classroom_timeslots[classroom_id]:
                 # Classroom conflict, so repair the gene
-                # Fallback: Try to find a different classroom or select randomly
-                if classrooms:
-                    new_classroom = random.choice(classrooms)
-                else:
-                    new_classroom = classroom_id  # No change if no alternative available
+                new_classroom = random.choice(classrooms)
                 gene['classroom'] = new_classroom['id']
 
             classroom_timeslots[classroom_id].append(timeslot)
 
-    return individual
+            # Track day slots for gap detection
+            if day not in day_slots:
+                day_slots[day] = []
+            day_slots[day].append(slot)
 
+        # ---- Repair Gaps in Timetables ----
+        for day, slots in day_slots.items():
+            slots.sort()  # Sort slots to find gaps
+
+            # Try to reduce gaps by shifting or swapping slots
+            for i in range(len(slots) - 1):
+                current_slot = slots[i]
+                next_slot = slots[i + 1]
+
+                if next_slot > current_slot + 1:  # Gap detected
+                    gap_size = next_slot - (current_slot + 1)
+
+                    # Attempt to fill the gap by shifting a nearby timeslot or reassigning
+                    for j, gene in enumerate(year_timetable):
+                        if gene['timeslot']['day'] == day and gene['timeslot']['slot'] == next_slot:
+                            available_timeslots = [ts for ts in timeslots if ts['slot'] == current_slot + 1 and ts not in classroom_timeslots[gene['classroom']]]
+                            if available_timeslots:
+                                # Shift the next slot to close the gap
+                                gene['timeslot'] = available_timeslots[0]
+                                classroom_timeslots[gene['classroom']].append((day, current_slot + 1))
+                                break
+
+    return individual
 
 
 
@@ -359,7 +530,7 @@ MUTATION_RATE = 0.1
 NUM_GENERATIONS = 100000
 TOURNAMENT_SIZE = 3
 # Define thresholds
-RESET_THRESHOLD = -400
+RESET_THRESHOLD = -600
 STOP_THRESHOLD = 0
 # Initialize Population
 population = generate_population(POPULATION_SIZE, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course)
@@ -383,24 +554,16 @@ for generation in range(NUM_GENERATIONS):
       print(f"Best Solution of Generation {generation} before fixing:")
       display_population([population[best_index]])
 
-      # Fix the timetable conflicts in the best solution
-    #   print("Fixing timetable conflicts in the best solution...")
-    #   fixed_timetable = fix_timetable_fitness(population[best_index], teacher_max_hours)
-    #   fixed_fitness = fitness_function(fixed_timetable, teacher_max_hours)
-    #   print(f"Fixed Fitness of Generation {generation}: {fixed_fitness}")
-    #   print(f"Fixed Solution of Generation {generation}:")
-      display_population([population[best_index]])
-    #   print(fixed_timetable)
 
       break
     # Check if all fitness values are the same and below the reset threshold
     if len(set(fitness_values)) == 1 or min(fitness_values) <= RESET_THRESHOLD:
         print("Resetting population due to no improvement.")
-        # Reinitialize the population
+
         population = generate_population(POPULATION_SIZE, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course)
         if len(set(fitness_values)) == 1: print("All individuals have the same fitness value. Stopping early.")
         if min(fitness_values) <= RESET_THRESHOLD: print("All individuals have a fitness value less than or equal to the reset threshold. ")
-        continue  # Skip the rest of the loop and start the next generation with the new population
+        continue  
 
     print(2)
     

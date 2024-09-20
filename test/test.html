@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,104 +6,199 @@
     <title>Timetable</title>
     <style>
         table {
-            width: 100%;
             border-collapse: collapse;
+            width: 100%;
         }
         th, td {
-            border: 1px solid #ddd;
+            border: 1px solid black;
             padding: 8px;
             text-align: center;
         }
         th {
-            background-color: #f4f4f4;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .course-info {
-            text-align: left;
+            background-color: #f2f2f2;
         }
     </style>
 </head>
 <body>
-    <h1>Timetable</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Time</th>
-                <th>Sunday</th>
-                <th>Monday</th>
-                <th>Tuesday</th>
-                <th>Wednesday</th>
-                <th>Thursday</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>08:00 - 08:45</td>
-                <td></td>
-                <td>رياضيات (TeachID: 9191, ClassID: 104)</td>
-                <td>التربية الموسيقية (TeachID: 9181, ClassID: 104)</td>
-                <td>الرياضيات (TeachID: 9161, ClassID: 102)</td>
-                <td>الرياضيات (TeachID: 9191, ClassID: 106)</td>
-            </tr>
-            <tr>
-                <td>08:45 - 09:30</td>
-                <td></td>
-                <td></td>
-                <td>التربية الموسيقية (TeachID: 9191, ClassID: 109)</td>
-                <td>اللغة العربية (TeachID: 9191, ClassID: 104)</td>
-                <td>الرياضيات (TeachID: 9191, ClassID: 106)</td>
-            </tr>
-            <tr>
-                <td>09:30 - 10:15</td>
-                <td></td>
-                <td>التربية الموسيقية (TeachID: 9171, ClassID: 101)</td>
-                <td></td>
-                <td>اللغة العربية (TeachID: 9171, ClassID: 103)</td>
-                <td>التربية العلمية و التكنولوجية (TeachID: 9201, ClassID: 104)</td>
-            </tr>
-            <tr>
-                <td>10:30 - 11:15</td>
-                <td></td>
-                <td>التربية العلمية و التكنولوجية (TeachID: 9181, ClassID: 107)</td>
-                <td></td>
-                <td>التاريخ و الجغرافيا (TeachID: 9191, ClassID: 102)</td>
-                <td>التاريخ و الجغرافيا (TeachID: 9191, ClassID: 103)</td>
-            </tr>
-            <tr>
-                <td>11:15 - 12:00</td>
-                <td></td>
-                <td>التربية العلمية و التكنولوجية (TeachID: 9181, ClassID: 107)</td>
-                <td>التربية الموسيقية (TeachID: 9201, ClassID: 108)</td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>14:00 - 14:45</td>
-                <td>التاريخ و الجغرافيا (TeachID: 9201, ClassID: 102)</td>
-                <td>التربية الإسلامية (TeachID: 9181, ClassID: 105)</td>
-                <td></td>
-                <td></td>
-                <td>التربية الإسلامية (TeachID: 9181, ClassID: 101)</td>
-            </tr>
-            <tr>
-                <td>14:45 - 15:30</td>
-                <td>التاريخ و الجغرافيا (TeachID: 9171, ClassID: 106)</td>
-                <td></td>
-                <td></td>
-                <td>التربية العلمية و التكنولوجية (TeachID: 9181, ClassID: 107)</td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>15:30 - 16:15</td>
-                <td>رياضيات (TeachID: 9161, ClassID: 101)</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-        </tbody>
-    </table>
+
+<h2>Weekly Timetable</h2>
+
+<table>
+    <tr>
+        <th>Time</th>
+        <th>Sunday</th>
+        <th>Monday</th>
+        <th>Tuesday</th>
+        <th>Wednesday</th>
+        <th>Thursday</th>
+    </tr>
+    <tr>
+        <td>08:00 - 08:45</td>
+        <td>اللغة الانجليزية (TeachID: 9201, ClassID: 109)</td>
+        <td>الرياضيات (TeachID: 9201, ClassID: 102)</td>
+        <td>الرياضيات (TeachID: 9181, ClassID: 105)</td>
+        <td></td>
+        <td>التربية الفنية (TeachID: 9191, ClassID: 102)</td>
+    </tr>
+    <tr>
+        <td>08:45 - 09:30</td>
+        <td>اللغة العربية (TeachID: 9181, ClassID: 107)</td>
+        <td>التربية الفنية (TeachID: 9201, ClassID: 106)</td>
+        <td>اللغة الانجليزية (TeachID: 9181, ClassID: 106)</td>
+        <td></td>
+        <td>التربية الموسيقية (TeachID: 9201, ClassID: 106)</td>
+    </tr>
+    <tr>
+        <td>09:30 - 10:15</td>
+        <td>التربية الموسيقية (TeachID: 9181, ClassID: 109)</td>
+        <td>التربية المدنية (TeachID: 9191, ClassID: 109)</td>
+        <td>اللغة الفرنسية (TeachID: 9201, ClassID: 104)</td>
+        <td>التربية الإسلامية (TeachID: 9181, ClassID: 109)</td>
+        <td>اللغة الفرنسية (TeachID: 9191, ClassID: 107)</td>
+    </tr>
+    <tr>
+        <td>10:30 - 11:15</td>
+        <td>اللغة الفرنسية (TeachID: 9161, ClassID: 109)</td>
+        <td>الرياضيات (TeachID: 9191, ClassID: 107)</td>
+        <td>التربية الموسيقية (TeachID: 9191, ClassID: 104)</td>
+        <td>الرياضيات (TeachID: 9191, ClassID: 108)</td>
+        <td>التربية الموسيقية (TeachID: 9201, ClassID: 109)</td>
+    </tr>
+    <tr>
+        <td>11:15 - 12:00</td>
+        <td></td>
+        <td>التربية المدنية (TeachID: 9181, ClassID: 108)</td>
+        <td>اللغة الفرنسية (TeachID: 9201, ClassID: 103)</td>
+        <td>التربية الفنية (TeachID: 9181, ClassID: 109)</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>14:00 - 14:45</td>
+        <td></td>
+        <td>التربية الإسلامية (TeachID: 9201, ClassID: 107)</td>
+        <td>اللغة العربية (TeachID: 9191, ClassID: 103)</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>14:45 - 15:30</td>
+        <td></td>
+        <td>التربية الفنية (TeachID: 9181, ClassID: 107)</td>
+        <td>التربية المدنية (TeachID: 9201, ClassID: 104)</td>
+        <td>التربية المدنية (TeachID: 9201, ClassID: 101)</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>15:30 - 16:15</td>
+        <td></td>
+        <td>اللغة العربية (TeachID: 9191, ClassID: 102)</td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+</table>
+
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timetable 2</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Weekly Timetable 2</h2>
+
+<table>
+    <tr>
+        <th>Time</th>
+        <th>Sunday</th>
+        <th>Monday</th>
+        <th>Tuesday</th>
+        <th>Wednesday</th>
+        <th>Thursday</th>
+    </tr>
+    <tr>
+        <td>08:00 - 08:45</td>
+        <td></td>
+        <td></td>
+        <td>التربية العلمية و التكنولوجية (TeachID: 9201, ClassID: 102)</td>
+        <td></td>
+        <td>التربية الموسيقية (TeachID: 9181, ClassID: 106)</td>
+    </tr>
+    <tr>
+        <td>08:45 - 09:30</td>
+        <td></td>
+        <td>اللغة العربية (TeachID: 9181, ClassID: 101)</td>
+        <td>التربية العلمية و التكنولوجية (TeachID: 9201, ClassID: 108)</td>
+        <td>الرياضيات (TeachID: 9191, ClassID: 103)</td>
+        <td>التاريخ و الجغرافيا (TeachID: 9161, ClassID: 107)</td>
+    </tr>
+    <tr>
+        <td>09:30 - 10:15</td>
+        <td></td>
+        <td>اللغة العربية (TeachID: 9191, ClassID: 105)</td>
+        <td>الرياضيات (TeachID: 9191, ClassID: 108)</td>
+        <td>التاريخ و الجغرافيا (TeachID: 9161, ClassID: 101)</td>
+        <td>التربية الموسيقية (TeachID: 9201, ClassID: 109)</td>
+    </tr>
+    <tr>
+        <td>10:30 - 11:15</td>
+        <td></td>
+        <td>التربية الموسيقية (TeachID: 9171, ClassID: 103)</td>
+        <td>اللغة العربية (TeachID: 9171, ClassID: 109)</td>
+        <td>الرياضيات (TeachID: 9201, ClassID: 104)</td>
+        <td>الرياضيات (TeachID: 9171, ClassID: 103)</td>
+    </tr>
+    <tr>
+        <td>11:15 - 12:00</td>
+        <td></td>
+        <td></td>
+        <td>التربية الإسلامية (TeachID: 9171, ClassID: 108)</td>
+        <td>التاريخ و الجغرافيا (TeachID: 9161, ClassID: 104)</td>
+        <td>التربية الإسلامية (TeachID: 9161, ClassID: 108)</td>
+    </tr>
+    <tr>
+        <td>14:00 - 14:45</td>
+        <td>اللغة العربية (TeachID: 9171, ClassID: 103)</td>
+        <td></td>
+        <td>التربية العلمية و التكنولوجية (TeachID: 9201, ClassID: 102)</td>
+        <td></td>
+        <td>التربية الموسيقية (TeachID: 9181, ClassID: 109)</td>
+    </tr>
+    <tr>
+        <td>14:45 - 15:30</td>
+        <td>التاريخ و الجغرافيا (TeachID: 9181, ClassID: 102)</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>15:30 - 16:15</td>
+        <td>التربية الموسيقية (TeachID: 9201, ClassID: 109)</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+</table>
+
 </body>
 </html>
