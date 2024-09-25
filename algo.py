@@ -19,57 +19,91 @@ def generate_gene(year_id, available_teachers, available_courses, available_clas
         'classroom': classroom['id'],
         'timeslot': timeslot
     }
+def assign_teacher_to_class(class_day, teacher):
+    
+    if class_day in teacher['unavailability']:
+        return False  # Teacher is unavailable on this day
+    else:
+        # Proceed with assignment
+        return True
 
-def generate_population(population_size, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course):
-    """
-    Generate a population of timetables for multiple study years.
-    """
+
+import random
+
+def generate_population(population_size, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours):
     population = []
 
     for _ in range(population_size):
         individual = []
-        teacher_workload = {teacher['id']: 0 for teacher in teachers}  # Track workload for each teacher
-        year_timeslot_usage = {year['id']: [] for year in years}  # Track timeslot usage for each year
-        
+        teacher_workload = {teacher['id']: 0 for teacher in teachers}
+        year_timeslot_usage = {year['id']: [] for year in years}
+
         for year in years:
             year_timetable = []
-            courses_for_year = year_courses[year['id']]  # Get the specific courses for this year
+            courses_for_year = year_courses[year['id']]
 
             for course in courses_for_year:
-                course_duration_hours = hours_per_course[course['course_name']]  # Get hours for the course
-                slots_needed = course_duration_hours * 60 // COURSE_DURATION_MINUTES  # Convert to number of 45-minute slots
+                course_duration_hours = course['hours']
+                slots_needed = course_duration_hours * 60 // COURSE_DURATION_MINUTES
 
                 for _ in range(int(slots_needed)):
+                    # Filter teachers based on course they can teach and their max workload
                     available_teachers = [
                         t for t in teachers 
-                        if course['id'] in t['courses'] and teacher_workload[t['id']] + (COURSE_DURATION_MINUTES / 60) <= teacher_max_hours[t['id']]
+                        if course['id'] in t['courses'] and 
+                        teacher_workload[t['id']] + (COURSE_DURATION_MINUTES / 60) <= teacher_max_hours[t['id']]
                     ]
-                    
+
                     if not available_teachers:
                         raise Exception(f"No available teachers for course {course['course_name']} in year {year['name']}")
+
+                    # Find available timeslots not yet used in this year
                     available_timeslots = [
                         ts for ts in timeslots 
                         if (ts['day'], ts['slot']) not in year_timeslot_usage[year['id']]
                     ]
-                    
+
                     if not available_timeslots:
                         raise Exception(f"No available timeslots for year {year['name']} to schedule {course['course_name']}")
-                   
 
+                    # Shuffle the available timeslots to maintain randomness
+                    random.shuffle(available_timeslots)
 
-                    gene = generate_gene(
-                        year_id=year['id'], 
-                        available_teachers=available_teachers, 
-                        available_courses=[course], 
-                        available_classrooms=classrooms, 
-                        available_timeslots=available_timeslots
-                    )
+                    # Try to generate a valid gene
+                    assigned = False
+                    for ts in available_timeslots:
+                        # Filter teachers based on unavailability for this specific timeslot
+                        available_teachers_for_slot = [
+                            t for t in available_teachers 
+                            if assign_teacher_to_class(ts['day'], t)
+                        ]
 
-                    teacher_workload[gene['teacher']] += COURSE_DURATION_MINUTES / 60  # Convert to hours
-                    year_timeslot_usage[year['id']].append((gene['timeslot']['day'], gene['timeslot']['slot']))
-                    year_timetable.append(gene)
+                        if available_teachers_for_slot:
+                            # Generate the gene with available resources
+                            gene = generate_gene(
+                                year_id=year['id'], 
+                                available_teachers=available_teachers_for_slot, 
+                                available_courses=[course], 
+                                available_classrooms=classrooms, 
+                                available_timeslots=[ts]
+                            )
 
+                            # Update teacher workload
+                            teacher_workload[gene['teacher']] += COURSE_DURATION_MINUTES / 60
+                            # Mark the timeslot as used for this year
+                            year_timeslot_usage[year['id']].append((gene['timeslot']['day'], gene['timeslot']['slot']))
+                            # Add the scheduled class (gene) to the year timetable
+                            year_timetable.append(gene)
+
+                            assigned = True
+                            break  # Exit the loop once a class is successfully assigned
+
+                    if not assigned:
+                        raise Exception(f"Could not assign a teacher for {course['course_name']} in year {year['name']} after checking all available timeslots.")
+
+            # Add the year timetable to the individual
             individual.append(year_timetable)
+        # Add the individual (complete timetable for all years) to the population
         population.append(individual)
 
     return population
@@ -85,70 +119,6 @@ def display_population(population):
                 print(f"  {gene['year_id']}- Course: {gene['course']}, TeachID: {gene['teacher']}, "
                       f"ClassID: {gene['classroom']},{gene['timeslot']['day']}  {gene['timeslot']['start_time']} - {gene['timeslot']['end_time']} Slot {gene['timeslot']['slot']}")
 
-# def fitness_function(individual, teacher_max_hours):
-#     """
-#     Evaluate the fitness of an individual.
-#     """
-#     fitness = 0
-#     gap_penalty = 5
-#     teacher_timeslots = {}
-#     classroom_timeslots = {}
-#     teacher_workload = {teacher['id']: 0 for teacher in teachers}
-#     year_timeslot_usage = {}
-
-#     for year_timetable in individual:
-#         day_slots = {}
-#         for gene in year_timetable:
-#             teacher_id = gene['teacher']
-#             classroom_id = gene['classroom']
-#             timeslot = (gene['timeslot']['day'], gene['timeslot']['slot'])
-            
-#             if teacher_id not in teacher_timeslots:
-#                 teacher_timeslots[teacher_id] = []
-
-#             if timeslot in teacher_timeslots[teacher_id]:
-#                 # print("Overlap detected between teacher and timeslot")
-#                 fitness -= 10
-#                 teacher_workload[teacher_id] += COURSE_DURATION_MINUTES / 60
-#             else:
-#                 teacher_timeslots[teacher_id].append(timeslot)
-#                 teacher_workload[teacher_id] += COURSE_DURATION_MINUTES / 60
-
-#             if classroom_id not in classroom_timeslots:
-#                 classroom_timeslots[classroom_id] = []
-
-#             if timeslot in classroom_timeslots[classroom_id]:
-#                 # print(f"kayn conflict for classroom {classroom_id} at timeslot {timeslot}")
-#                 fitness -= 10
-#             else:
-#                 classroom_timeslots[classroom_id].append(timeslot)
-            
-#             year_id = gene['year_id']
-#             if year_id not in year_timeslot_usage:             
-#                 year_timeslot_usage[year_id] = []
-
-#             if timeslot in year_timeslot_usage[year_id]:
-#                 # print("Overlap detected between year and timeslot")
-#                 fitness -= 10
-#             else:
-#                 year_timeslot_usage[year_id].append(timeslot)
-#         for slots in day_slots.items():
-#             print(1)
-#             slots.sort()  # Sort timeslots to ensure they are consecutive
-#             for i in range(len(slots) - 1):
-#                 print(2)
-#                 current_slot = slots[i]
-#                 next_slot = slots[i + 1]
-
-#                 if next_slot > current_slot + 1:  
-#                     print(f"Gap detected between slots")
-#                     gap_size = next_slot - (current_slot + 1)
-#                     fitness -= gap_penalty * gap_size 
-#     for teacher_id, workload in teacher_workload.items():
-#         if workload > teacher_max_hours[teacher_id]:
-#             print("Teacher workload exceeds max hours")
-#             fitness -= 11  
-#     return fitness
 def fitness_function(individual, teacher_max_hours):
     """
     Evaluate the fitness of an individual.
@@ -241,7 +211,6 @@ def crossover(parent1, parent2):
 
     return child1, child2
 
-
 def mutate(individual, mutation_rate, teachers, classrooms, timeslots):
     """
     Apply mutation to an individual by randomly changing the teacher, classroom, and timeslot of one gene per year.
@@ -287,65 +256,6 @@ def tournament_selection(population, fitness_values, k=3):#tkhayar best 1 mn 3 r
     
 
     return parent1, parent2
-# def repair(individual, teachers, classrooms, timeslots, teacher_max_hours):
-#     """
-#     Repairs an individual (chromosome) by resolving hard constraint violations.
-    
-#     Parameters:
-#     - individual: The individual (timetable) to be repaired.
-#     - teachers: List of teachers.
-#     - classrooms: List of classrooms.
-#     - timeslots: List of available timeslots.
-#     - teacher_max_hours: Max teaching hours per teacher.
-
-#     Returns:
-#     - Repaired individual.
-#     """
-#     teacher_timeslots = {}  # Dictionary to track which timeslots a teacher has been assigned
-#     classroom_timeslots = {}  # Track which timeslots a classroom has been occupied
-#     teacher_workload = {teacher['id']: 0 for teacher in teachers}  # Initialize workload dictionary
-
-#     # Repair hard constraint violations
-#     for year_timetable in individual:
-#         for gene in year_timetable:
-#             teacher_id = gene['teacher']
-#             classroom_id = gene['classroom']
-#             timeslot = (gene['timeslot']['day'], gene['timeslot']['slot'])  # Combine day and slot
-
-#             # ---- Repair Teacher Conflicts ----
-#             if teacher_id not in teacher_timeslots:
-#                 teacher_timeslots[teacher_id] = []
-#             if timeslot in teacher_timeslots[teacher_id] or teacher_workload[teacher_id] >= teacher_max_hours[teacher_id]:
-#                 # Teacher conflict or exceeding max hours, so repair the gene
-#                 # Fallback: Try to find a teacher who can teach the course or select randomly
-#                 available_teachers = [t for t in teachers if gene['course'] in t['courses']]
-#                 if available_teachers:
-#                     new_teacher = random.choice(available_teachers)
-#                 else:
-#                     new_teacher = random.choice(teachers)
-#                 gene['teacher'] = new_teacher['id']
-#                 teacher_workload[new_teacher['id']] += COURSE_DURATION_MINUTES / 60  # Update workload
-#                 # Note: Recalculate workload if necessary
-#             else:
-#                 teacher_workload[teacher_id] += COURSE_DURATION_MINUTES / 60
-
-#             teacher_timeslots[teacher_id].append(timeslot)
-
-#             # ---- Repair Classroom Conflicts ----
-#             if classroom_id not in classroom_timeslots:
-#                 classroom_timeslots[classroom_id] = []
-#             if timeslot in classroom_timeslots[classroom_id]:
-#                 # Classroom conflict, so repair the gene
-#                 # Fallback: Try to find a different classroom or select randomly
-#                 if classrooms:
-#                     new_classroom = random.choice(classrooms)
-#                 else:
-#                     new_classroom = classroom_id  # No change if no alternative available
-#                 gene['classroom'] = new_classroom['id']
-
-#             classroom_timeslots[classroom_id].append(timeslot)
-
-#     return individual
 
 def repair(individual, teachers, classrooms, timeslots, teacher_max_hours):
     """
@@ -433,42 +343,13 @@ def repair(individual, teachers, classrooms, timeslots, teacher_max_hours):
 
     return individual
 
-
-
-
-teachers=[
-{'id': 9161, 'name': '004', 'courses': [91, 101, 111, 121, 131, 141, 151, 161], 'state': 'working'},
-{'id': 9171, 'name': '005', 'courses': [91, 101, 111, 121, 131, 141, 151, 161, 171], 'state': 'working'},
-{'id': 9181, 'name': '006', 'courses': [1, 2, 3, 4, 7, 8, 9, 10, 11, 19], 'state': 'working'},
-{'id': 9191, 'name': '007', 'courses': [1, 2, 3, 4, 7, 8, 9, 10, 11, 19], 'state': 'working'},
-{'id': 9201, 'name': '008', 'courses': [1, 2, 3, 4, 7, 8, 9, 10, 11, 19], 'state': 'working'},]
-
-classrooms = [
-    {'id': 101, 'name': 'Room A'},
-    {'id': 102, 'name': 'Room B'},
-    {'id': 103, 'name': 'Lab 1'},
-    {'id': 104, 'name': 'Room C'},
-    {'id': 105, 'name': 'Lab 3'},
-    {'id': 106, 'name': 'Room D'},
-    {'id': 107, 'name': 'Room E'},
-    {'id': 108, 'name': 'Lab 2'},   
-    {'id': 109, 'name': 'Lab 4'}
-]
-
-year_courses = {3: [{'id': 161, 'course_name': 'فهم المكتوب'}, {'id': 131, 'course_name': 'قراءة'}, {'id': 101, 'course_name': 'محفوظات'}, {'id': 141, 'course_name': 'فهم المنطوق'}, {'id': 111, 'course_name': 'ت.فنية'}, {'id': 151, 'course_name': 'التعبير الشفوي'}, {'id': 121, 'course_name': 'SVT'}, {'id': 91, 'course_name': 'كتابة و تمارين على كراس القسم'}],
-                 4: [{'id': 161, 'course_name': 'فهم المكتوب'}, {'id': 131, 'course_name': 'قراءة'}, {'id': 101, 'course_name': 'محفوظات'}, {'id': 171, 'course_name': 'ت.كتابي'}, {'id': 141, 'course_name': 'فهم المنطوق'}, {'id': 111, 'course_name': 'ت.فنية'}, {'id': 151, 'course_name': 'التعبير الشفوي'}, {'id': 121, 'course_name': 'SVT'}, {'id': 91, 'course_name': 'كتابة و تمارين على كراس القسم'}], 
-                5: [{'id': 1, 'course_name': 'اللغة العربية'}, {'id': 2, 'course_name': 'اللغة الفرنسية'}, {'id': 3, 'course_name': 'اللغة الانجليزية'}, {'id': 4, 'course_name': 'الرياضيات'}, {'id': 7, 'course_name': 'التربية الإسلامية'}, {'id': 9, 'course_name': 'التربية المدنية'}, {'id': 10, 'course_name': 'التربية الفنية'}, {'id': 11, 'course_name': 'التربية الموسيقية'},],
- 6: [{'id': 1, 'course_name': 'اللغة العربية'}, {'id': 2, 'course_name': 'اللغة الفرنسية'},   {'id': 10, 'course_name': 'التربية الفنية'}, {'id': 11, 'course_name': 'التربية الموسيقية'}, {'id': 19, 'course_name': 'التربية العلمية و التكنولوجية'}], 
- 7: [{'id': 1, 'course_name': 'اللغة العربية'}, {'id': 4, 'course_name': 'الرياضيات'}, {'id': 7, 'course_name': 'التربية الإسلامية'}, {'id': 8, 'course_name': 'التاريخ و الجغرافيا'},  {'id': 11, 'course_name': 'التربية الموسيقية'}, {'id': 19, 'course_name': 'التربية العلمية و التكنولوجية'}]}
-
 years = [
+    {'id': 1, 'name': 'Year 1'},
+    {'id': 2, 'name': 'Year 2'},
     {'id': 3, 'name': 'Year 3'},
     {'id': 4, 'name': 'Year 4'},
-    {'id': 5, 'name': 'Year 5'},
-    {'id': 6, 'name': 'Year 6'},
-    {'id': 7, 'name': 'Year 7'},
+    # {'id': 5, 'name': 'Year 5'}
 ]
-
 
 timeslots = [
     # Sunday (slots 1-7)
@@ -515,32 +396,122 @@ timeslots = [
     {'day': 'Thursday', 'slot': 33, 'start_time': '10:30', 'end_time': '11:15'},
     {'day': 'Thursday', 'slot': 34, 'start_time': '11:15', 'end_time': '12:00'},
     {'day': 'Thursday', 'slot': 35, 'start_time': '14:00', 'end_time': '14:45'},
-    {'day': 'Thursday', 'slot': 36, 'start_time': '14:45', 'end_time': '15:30'},
+    {'day': 'Thursday', 'slot': 36, 'start_time': '14:45', 'end_time': '15:30'}
+]
+
+teacher_max_hours = {
+    101: 26, 
+    102: 26, 
+    103: 26, 
+    104: 26, 
+    105: 26
+}
+
+teachers = [
+    {'id': 101, 'name': 'John Smith', 'courses': [1, 4, 7, 10, 14,15], 'state': 'working','unavailability': ['Tuesday']},  
+    {'id': 102, 'name': 'Sarah Johnson', 'courses': [2, 3, 8, 11], 'state': 'working','unavailability': ['Tuesday']},  
+    {'id': 103, 'name': 'Michael Lee', 'courses': [1, 5, 6, 9, 12], 'state': 'working','unavailability': ['Tuesday']}, 
+    {'id': 104, 'name': 'Emily Davis', 'courses': [4, 13, 15, 9, 10], 'state': 'working','unavailability': ['Tuesday']},  
+    {'id': 105, 'name': 'David Brown', 'courses': [3, 7, 12, 11,17], 'state': 'working','unavailability': ['Tuesday']} 
 ]
 
 
-teacher_max_hours = { 9161: 26, 9171: 26, 9181: 26, 9191: 26, 9201: 26}
+year_courses = {
+    1: [
+        # {'id': 1, 'course_name': 'اللغة العربية', 'hours': 2.25}, 
+        {'id': 2, 'course_name': 'اللغة الفرنسية', 'hours': 4.5},  
+        {'id': 3, 'course_name': 'اللغة الانجليزية', 'hours': 2.25},  # 1.5 hours + 45 minutes
+        {'id': 4, 'course_name': 'الرياضيات', 'hours': 0.75},  # 3 x 1.5 hours
+        {'id': 7, 'course_name': 'التربية الإسلامية', 'hours': 1.5},  # 1.5 hours
+        {'id': 8, 'course_name': 'التاريخ و الجغرافيا', 'hours': 2.25},  # 2 x 1.125 hours
+        {'id': 9, 'course_name': 'التربية المدنية', 'hours': 1.5},  # 1.5 hours
+        {'id': 10, 'course_name': 'التربية الفنية', 'hours': 1.5},  # 1.5 hours
+        {'id': 11, 'course_name': 'التربية الموسيقية', 'hours': 1.5},  # 1.5 hours
+        {'id': 12, 'course_name': 'التربية البدنية', 'hours': 2.25},  # 2 x 1.125 hours
+        {'id': 13, 'course_name': 'اللغة الأمازيغية', 'hours': 1.5},  # 1.5 hours
+        # {'id': 14, 'course_name': 'علوم الطبيعة و الحياة', 'hours': 2.25},  # 2 x 1.125 hours
+        # {'id': 15, 'course_name': 'العلوم الفيزيائية و التكنولوجيا', 'hours': 2.25},  # 2 x 1.125 hours
+        # {'id': 17, 'course_name': 'الاعلام الآلي', 'hours': 1.5}  # 1.5 hours
+    ],
+    2: [
+        # {'id': 1, 'course_name': 'اللغة العربية', 'hours':1.5},
+        # {'id': 2, 'course_name': 'اللغة الفرنسية', 'hours': 1.5},
+        {'id': 3, 'course_name': 'اللغة الانجليزية', 'hours': 2.25},
+        {'id': 4, 'course_name': 'الرياضيات', 'hours': 1.5},
+        {'id': 7, 'course_name': 'التربية الإسلامية', 'hours': 1.5},
+        {'id': 8, 'course_name': 'التاريخ و الجغرافيا', 'hours': 2.25},
+        {'id': 9, 'course_name': 'التربية المدنية', 'hours': 1.5},
+        {'id': 10, 'course_name': 'التربية الفنية', 'hours': 1.5},
+        {'id': 11, 'course_name': 'التربية الموسيقية', 'hours': 1.5},
+        {'id': 12, 'course_name': 'التربية البدنية', 'hours': 2.25},
+        # {'id': 13, 'course_name': 'اللغة الأمازيغية', 'hours': 1.5},
+        {'id': 14, 'course_name': 'علوم الطبيعة و الحياة', 'hours': 2.25},
+        # {'id': 15, 'course_name': 'العلوم الفيزيائية و التكنولوجيا', 'hours': 2.25},
+        # {'id': 17, 'course_name': 'الاعلام الآلي', 'hours': 1.5}
+    ],
+    3: [
+        # {'id': 1, 'course_name': 'اللغة العربية', 'hours': 2.25},
+        # {'id': 2, 'course_name': 'اللغة الفرنسية', 'hours': 1.5},
+        {'id': 3, 'course_name': 'اللغة الانجليزية', 'hours': 1.5},
+        {'id': 4, 'course_name': 'الرياضيات', 'hours': 1.5},
+        {'id': 7, 'course_name': 'التربية الإسلامية', 'hours': 1.5},
+        {'id': 8, 'course_name': 'التاريخ و الجغرافيا', 'hours': 2.25},
+        {'id': 9, 'course_name': 'التربية المدنية', 'hours': 1.5},
+        {'id': 10, 'course_name': 'التربية الفنية', 'hours': 1.5},
+        {'id': 11, 'course_name': 'التربية الموسيقية', 'hours': 1.5},
+        {'id': 12, 'course_name': 'التربية البدنية', 'hours': 2.25},
+        {'id': 13, 'course_name': 'اللغة الأمازيغية', 'hours': 1.5},
+        {'id': 14, 'course_name': 'علوم الطبيعة و الحياة', 'hours': 2.25},
+        # {'id': 15, 'course_name': 'العلوم الفيزيائية و التكنولوجيا', 'hours': 2.25},
+        # {'id': 17, 'course_name': 'الاعلام الآلي', 'hours': 1.5}
+    ],
+    4: [
+        # {'id': 1, 'course_name': 'اللغة العربية', 'hours':1.5},
+        # {'id': 2, 'course_name': 'اللغة الفرنسية', 'hours': 1.5},
+        {'id': 3, 'course_name': 'اللغة الانجليزية', 'hours': 2.25},
+        {'id': 4, 'course_name': 'الرياضيات', 'hours': 1.5},
+        {'id': 7, 'course_name': 'التربية الإسلامية', 'hours': 1.5},
+        {'id': 8, 'course_name': 'التاريخ و الجغرافيا', 'hours': 2.25},
+        {'id': 9, 'course_name': 'التربية المدنية', 'hours': 1.5},
+        {'id': 10, 'course_name': 'التربية الفنية', 'hours': 1.5},
+        {'id': 11, 'course_name': 'التربية الموسيقية', 'hours': 1.5},
+        {'id': 12, 'course_name': 'التربية البدنية', 'hours': 2.25},
+        {'id': 13, 'course_name': 'اللغة الأمازيغية', 'hours': 1.5},
+        {'id': 14, 'course_name': 'علوم الطبيعة و الحياة', 'hours': 2.25},
+        # {'id': 15, 'course_name': 'العلوم الفيزيائية و التكنولوجيا', 'hours': 2.25},
+        # {'id': 17, 'course_name': 'الاعلام الآلي', 'hours': 1.5}
+    ]
+}
 
 
-hours_per_course = {'اللغة العربية': 3.0, 'اللغة الفرنسية': 3.0, 'اللغة الانجليزية': 1.50, 'الرياضيات': 3.0, 'العلوم الطبيعية': 2.0, 'العلوم الفيزيائية': 2.0, 'التربية الإسلامية': 2.0, 'القرآن': 2.0, 'سوروبان': 2.0, 'مراجعة اليات القراءة': 2.0, 'فهم المنطق ت.شفوي': 2.0, 'قراءة و مراجعة الحرف': 2.0, 'التاريخ و الجغرافيا': 3.0, 'التربية المدنية': 3.0, 'التربية الفنية': 3.0, 'التربية الموسيقية': 3.0, 'التربية العلمية و التكنولوجية': 3.0, 'التربية البدنية': 2.0, 'فهم المكتوب': 2.0, 'ت.كتابي': 2.0, 'وضعية ادماجية': 2.0, 'نحو +صرف': 2.0, 'قراءة': 2.0, 'SVT': 2.0, 'ت.فنية': 2.0, 'محفوظات': 2.0, 'كتابة و تمارين على كراس القسم': 2.0, 'فهم المنطوق': 2.0, 'التعبير الشفوي': 2.0}
 
-# Genetic Algorithm Parameters
+classrooms = [
+    {'id': 101, 'name': 'Room A'},
+    {'id': 102, 'name': 'Room B'},
+    {'id': 103, 'name': 'Lab 1'},
+    {'id': 104, 'name': 'Room C'},
+    {'id': 105, 'name': 'Lab 3'},
+    {'id': 106, 'name': 'Room D'},
+    {'id': 107, 'name': 'Room E'},
+    {'id': 108, 'name': 'Lab 2'},   
+    {'id': 109, 'name': 'Lab 4'}
+]
+
+
+
 POPULATION_SIZE = 10
 MUTATION_RATE = 0.1
-NUM_GENERATIONS = 100000
+NUM_GENERATIONS = 10000
 TOURNAMENT_SIZE = 3
-# Define thresholds
 RESET_THRESHOLD = -600
 STOP_THRESHOLD = 0
-# Initialize Population
-population = generate_population(POPULATION_SIZE, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course)
+population = generate_population(POPULATION_SIZE, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours)
 
 # Run Genetic Algorithm
 for generation in range(NUM_GENERATIONS):
     # Evaluate Fitness
     fitness_values = [fitness_function(individual, teacher_max_hours) for individual in population]
-    # fixed_fitness_values = [fix_timetable_fitness(individual, teacher_max_hours) for individual in population]
-    # print("fixed_fitness_values", fixed_fitness_values)
+
     
     # Print Fitness for Each Individual
     print(f"Generation {generation}:")
@@ -560,7 +531,7 @@ for generation in range(NUM_GENERATIONS):
     if len(set(fitness_values)) == 1 or min(fitness_values) <= RESET_THRESHOLD:
         print("Resetting population due to no improvement.")
 
-        population = generate_population(POPULATION_SIZE, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours, hours_per_course)
+        population = generate_population(POPULATION_SIZE, years, year_courses, teachers, classrooms, timeslots, teacher_max_hours)
         if len(set(fitness_values)) == 1: print("All individuals have the same fitness value. Stopping early.")
         if min(fitness_values) <= RESET_THRESHOLD: print("All individuals have a fitness value less than or equal to the reset threshold. ")
         continue  
@@ -574,8 +545,8 @@ for generation in range(NUM_GENERATIONS):
         parent1, parent2 = tournament_selection(population, fitness_values, k=TOURNAMENT_SIZE)
         child1, child2 = crossover(parent1, parent2)
 
-        # child1= mutate(child1, MUTATION_RATE, teachers, classrooms, timeslots)
-        # child2= mutate(child1, MUTATION_RATE, teachers, classrooms, timeslots)
+        child1= mutate(child1, MUTATION_RATE, teachers, classrooms, timeslots)
+        child2= mutate(child1, MUTATION_RATE, teachers, classrooms, timeslots)
         new_population.append(repair(child1, teachers, classrooms, timeslots, teacher_max_hours))
         new_population.append(repair(child2, teachers, classrooms, timeslots, teacher_max_hours))
     
